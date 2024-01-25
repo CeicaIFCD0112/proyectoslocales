@@ -1,0 +1,50 @@
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class ResultSetConverter {
+
+    public static <T> List<T> convertResultSetToList(ResultSet resultSet, Class<T> type) throws SQLException {
+        List<T> resultList = new ArrayList<>();
+
+        ResultSetMetaData metaData = resultSet.getMetaData();
+        int columnCount = metaData.getColumnCount();
+
+        while (resultSet.next()) {
+            T obj = createObjectFromResultSet(resultSet, metaData, type, columnCount);
+            resultList.add(obj);
+        }
+
+        return resultList;
+    }
+
+    private static <T> T createObjectFromResultSet(
+            ResultSet resultSet, ResultSetMetaData metaData, Class<T> type, int columnCount) throws SQLException {
+        try {
+            T obj = type.getDeclaredConstructor().newInstance();
+
+            for (int i = 1; i <= columnCount; i++) {
+                String columnName = metaData.getColumnName(i);
+                Object columnValue = resultSet.getObject(i);
+
+                // Aquí asumes que las propiedades en T tienen los mismos nombres que las columnas en la base de datos
+                // También asumes que los tipos de datos son compatibles (ajusta según sea necesario)
+
+                // Por ejemplo, si T tiene un método setNombre(String nombre):
+                // Reflection se usa aquí, asegúrate de manejar adecuadamente las excepciones y los tipos de datos
+
+                type.getMethod("set" + capitalize(columnName), columnValue.getClass()).invoke(obj, columnValue);
+            }
+
+            return obj;
+        } catch (Exception e) {
+            throw new SQLException("Error al crear un objeto desde ResultSet", e);
+        }
+    }
+
+    private static String capitalize(String str) {
+        return str.substring(0, 1).toUpperCase() + str.substring(1);
+    }
+}
